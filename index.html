@@ -252,10 +252,9 @@
   </div>
 
 <script>
-  const LOG_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlADv3u4sSC-FQQzLYQPr9btJGg7yhd0DL1xcYOOOvIehKUoRvHfxES0nWled4a64JuA/exec";
+const LOG_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlADv3u4sSC-FQQzLYQPr9btJGg7yhd0DL1xcYOOOvIehKUoRvHfxES0nWled4a64JuA/exec";
 
-  // 로그 전송 함수
-  function sendSearchLog(u, okCount) {
+function sendSearchLog(u, okCount, prof) {
     if (!LOG_WEB_APP_URL) return;
 
     const payload = {
@@ -266,7 +265,13 @@
       status: u.employment || "-",
       edu: u.education || "-",
       housing: u.housing || "-",
-      codes: `추천 ${okCount}건`
+      codes: `추천 ${okCount}건`,
+      // 각각의 태그 코드를 분리해서 전송
+      codeFamily: prof.family,   // J열: S 또는 F
+      codeJob: prof.job,         // K열: J 또는 W
+      codeHousing: prof.housing, // L열: P, I, H 중 하나
+      codeRegion: prof.region,   // M열: GG
+      codeCity: prof.city        // N열: 오산시 등
     };
 
     fetch(LOG_WEB_APP_URL, {
@@ -366,22 +371,26 @@
     }
   }
 
-  function buildProfile(u){
-    const tags=[]; const explain=[];
-    if(u.marriage==='single' && u.children==='none'){ tags.push('S'); explain.push('S=미혼·1인가구'); }
-    else { tags.push('F'); explain.push('F=가족가구/자녀'); }
+function buildProfile(u){
+    const prof = {
+      family: (u.marriage==='single' && u.children==='none') ? 'S' : 'F',
+      job: (u.employment==='unemployed' || u.employment==='jobseeker') ? 'J' : 'W',
+      housing: (u.housing==='with_parents') ? 'P' : ((u.housing==='independent' || u.housing==='unstable') ? 'I' : 'H'),
+      region: 'GG',
+      city: u.gyeonggiCity
+    };
 
-    if(u.employment==='unemployed' || u.employment==='jobseeker'){ tags.push('J'); explain.push('J=구직·준비'); }
-    else { tags.push('W'); explain.push('W=경제활동'); }
+    const tags = [prof.family, prof.job, prof.housing, prof.region, `CITY:${prof.city}`];
+    
+    const explain = [
+      prof.family === 'S' ? 'S=미혼·1인가구' : 'F=가족가구/자녀',
+      prof.job === 'J' ? 'J=구직·준비' : 'W=경제활동',
+      prof.housing === 'P' ? 'P=부모동거' : (prof.housing === 'I' ? 'I=독립/주거불안' : 'H=기타 주거'),
+      'GG=경기도 기준',
+      `CITY=${prof.city}`
+    ];
 
-    if(u.housing==='with_parents'){ tags.push('P'); explain.push('P=부모동거'); }
-    else if(u.housing==='independent' || u.housing==='unstable'){ tags.push('I'); explain.push('I=독립/주거불안'); }
-    else { tags.push('H'); explain.push('H=기타 주거'); }
-
-    tags.push('GG'); explain.push('GG=경기도 기준');
-    tags.push(`CITY:${u.gyeonggiCity}`); explain.push(`CITY=${u.gyeonggiCity}`);
-
-    return {tags, explain};
+    return { prof, tags, explain };
   }
 
   function matchPolicy(u,p, includeNationwide){
@@ -475,7 +484,7 @@
     return parts.filter(Boolean).join(' · ');
   }
 
-  function run(){
+function run(){
     const age = Number($('age').value);
     const u={
       age: Number.isFinite(age)?age:NaN,
@@ -489,13 +498,13 @@
 
     $('userSummary').textContent = userSummaryText(u);
 
-    const prof = buildProfile(u);
+    const { prof, tags, explain } = buildProfile(u);
     if(debugVisible){
       $('profileBadges').style.display='flex';
       $('profileExplain').style.display='block';
       $('profileHiddenHint').style.display='none';
-      $('profileBadges').innerHTML = prof.tags.map(t=>`<span class="badge">${escapeHtml(t)}</span>`).join('');
-      $('profileExplain').textContent = prof.explain.join(' / ');
+      $('profileBadges').innerHTML = tags.map(t=>`<span class="badge">${escapeHtml(t)}</span>`).join('');
+      $('profileExplain').textContent = explain.join(' / ');
     }else{
       $('profileBadges').style.display='none';
       $('profileExplain').style.display='none';
@@ -525,8 +534,7 @@
     $('kpiOk').textContent = String(ok.length);
     $('kpiMaybe').textContent = String(maybe.length);
 
-    // 검색 결과 산출 후 로그 전송
-    sendSearchLog(u, ok.length);
+    sendSearchLog(u, ok.length, prof);
   }
 
   function init(){
