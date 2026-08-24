@@ -242,19 +242,19 @@
         </div>
       </div>
 
-<details style="margin-top:16px;">
-  <summary class="muted" style="cursor:pointer; padding:8px 0; font-weight:600;">
-    현재는 비해당 (클릭하여 보기)
-  </summary>
-  <div class="list" id="listNo" style="margin-top:8px;"></div>
-</details>
+      <details style="margin-top:16px;">
+        <summary class="muted" style="cursor:pointer; padding:8px 0; font-weight:600;">
+          현재는 비해당 (클릭하여 보기)
+        </summary>
+        <div class="list" id="listNo" style="margin-top:8px;"></div>
+      </details>
     </section>
   </div>
 
 <script>
-const LOG_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlADv3u4sSC-FQQzLYQPr9btJGg7yhd0DL1xcYOOOvIehKUoRvHfxES0nWled4a64JuA/exec";
+  const LOG_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlADv3u4sSC-FQQzLYQPr9btJGg7yhd0DL1xcYOOOvIehKUoRvHfxES0nWled4a64JuA/exec";
 
-  // 2. 로그 전송 함수
+  // 로그 전송 함수
   function sendSearchLog(u, okCount) {
     if (!LOG_WEB_APP_URL) return;
 
@@ -276,7 +276,8 @@ const LOG_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlADv3u4sSC-FQ
       body: JSON.stringify(payload)
     }).catch(err => console.error("로그 전송 실패:", err));
   }
-const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTyURSDa3oJY2UbLgnp6YTpXFECx9x1WvHYYr3XcvUp078qrFHjyOCHg5lX6T6wiTJLI3Cn8tqLIWh/pub?output=csv";
+
+  const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTyURSDa3oJY2UbLgnp6YTpXFECx9x1WvHYYr3XcvUp078qrFHjyOCHg5lX6T6wiTJLI3Cn8tqLIWh/pub?output=csv";
   const GYEONGGI_CITIES = [
     '오산시','수원시','성남시','용인시','화성시','부천시','안산시','안양시','평택시','시흥시',
     '김포시','광명시','군포시','의왕시','과천시','이천시','안성시','광주시','하남시','의정부시',
@@ -488,9 +489,6 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 
     $('userSummary').textContent = userSummaryText(u);
 
-    sendSearchLog(u, ok.length);
-  }
-
     const prof = buildProfile(u);
     if(debugVisible){
       $('profileBadges').style.display='flex';
@@ -526,6 +524,9 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 
     $('kpiOk').textContent = String(ok.length);
     $('kpiMaybe').textContent = String(maybe.length);
+
+    // 검색 결과 산출 후 로그 전송
+    sendSearchLog(u, ok.length);
   }
 
   function init(){
@@ -538,7 +539,7 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
     $('includeNationwide').addEventListener('change', run);
     $('toggleDebug').addEventListener('click', ()=>{
       debugVisible = !debugVisible;
-      $('toggleDebug').textContent = debugVisible ? '분류코드 표시' : '분류코드 숨김';
+      $('toggleDebug').textContent = debugVisible ? '분류코드 숨김' : '분류코드 표시';
       run();
     });
   }
