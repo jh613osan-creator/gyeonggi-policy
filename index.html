@@ -534,17 +534,35 @@ function run(){
     $('kpiOk').textContent = String(ok.length);
     $('kpiMaybe').textContent = String(maybe.length);
 
-    sendSearchLog(u, ok.length, prof);
   }
 
-  function init(){
+function init(){
     const sel = $('gyeonggiCity');
     sel.innerHTML = GYEONGGI_CITIES.map(c=>`<option value="${c}">${c}</option>`).join('');
     sel.value = '오산시';
 
-    $('run').addEventListener('click', run);
+    $('run').addEventListener('click', ()=>{
+      run();
+      
+      const age = Number($('age').value);
+      const u = {
+        age: Number.isFinite(age)?age:NaN,
+        gyeonggiCity: $('gyeonggiCity').value,
+        marriage: $('marriage').value,
+        children: $('children').value,
+        employment: $('employment').value,
+        education: $('education').value,
+        housing: $('housing').value,
+      };
+      const { prof } = buildProfile(u);
+      const okCount = Number($('kpiOk').textContent) || 0;
+      
+      sendSearchLog(u, okCount, prof);
+});
+
     $('q').addEventListener('input', run);
     $('includeNationwide').addEventListener('change', run);
+    
     $('toggleDebug').addEventListener('click', ()=>{
       debugVisible = !debugVisible;
       $('toggleDebug').textContent = debugVisible ? '분류코드 숨김' : '분류코드 표시';
