@@ -252,6 +252,30 @@
   </div>
 
 <script>
+const LOG_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlADv3u4sSC-FQQzLYQPr9btJGg7yhd0DL1xcYOOOvIehKUoRvHfxES0nWled4a64JuA/exec";
+
+  // 2. 로그 전송 함수
+  function sendSearchLog(u, okCount) {
+    if (!LOG_WEB_APP_URL) return;
+
+    const payload = {
+      age: u.age || "-",
+      region: u.gyeonggiCity || "-",
+      marital: u.marriage || "-",
+      children: u.children || "-",
+      status: u.employment || "-",
+      edu: u.education || "-",
+      housing: u.housing || "-",
+      codes: `추천 ${okCount}건`
+    };
+
+    fetch(LOG_WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).catch(err => console.error("로그 전송 실패:", err));
+  }
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTyURSDa3oJY2UbLgnp6YTpXFECx9x1WvHYYr3XcvUp078qrFHjyOCHg5lX6T6wiTJLI3Cn8tqLIWh/pub?output=csv";
   const GYEONGGI_CITIES = [
     '오산시','수원시','성남시','용인시','화성시','부천시','안산시','안양시','평택시','시흥시',
@@ -463,6 +487,9 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
     };
 
     $('userSummary').textContent = userSummaryText(u);
+
+    sendSearchLog(u, ok.length);
+  }
 
     const prof = buildProfile(u);
     if(debugVisible){
