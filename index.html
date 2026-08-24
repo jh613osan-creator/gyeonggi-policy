@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>경기도 정책 추천 (v2 · 구글시트 연동)</title>
+  <style>
+    :root{
+      --bg0:#0b1020;
+      --bg1:#070a12;
+      --line: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --brand1:#7c3aed; --brand2:#22c55e; --brand3:#06b6d4;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 540px at 18% 12%, rgba(124,58,237,.32), transparent 60%),
+        radial-gradient(760px 460px at 86% 10%, rgba(6,182,212,.22), transparent 60%),
+        radial-gradient(740px 520px at 70% 86%, rgba(34,197,94,.20), transparent 58%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      background-attachment: fixed;
+    }
+    .wrap{max-width:1140px;margin:0 auto;padding:36px 20px 64px}
+
+    header{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;}
+    .brand{display:flex; gap:14px; align-items:center;}
+    .mark{width:54px;height:54px;border-radius:16px;background: conic-gradient(from 220deg, var(--brand1), var(--brand3), var(--brand2), var(--brand1));box-shadow: 0 18px 50px rgba(124,58,237,.28);position:relative;overflow:hidden;}
+    .mark:after{content:"";position:absolute; inset:-2px;background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.55), transparent 45%);mix-blend-mode: overlay;}
+    h1{margin:0;font-size:30px;letter-spacing:-.03em;line-height:1.12}
+    .sub{margin-top:8px;color:var(--muted);max-width:780px;line-height:1.5}
+
+    .topRight{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
+    .chip{display:inline-flex; align-items:center; gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background: rgba(255,255,255,.06);color: var(--muted);font-size:12px;}
+    .chip b{color:var(--text);font-weight:700}
+
+    .hero{border:1px solid var(--line);border-radius: calc(var(--radius) + 6px);background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));box-shadow: var(--shadow);overflow:hidden;}
+    .heroInner{padding:18px}
+
+    .grid{display:grid; grid-template-columns: 1.05fr .95fr; gap:14px}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .panel{border:1px solid var(--line);border-radius: var(--radius);background: rgba(0,0,0,.16);padding:16px;}
+    .panel h2{margin:0 0 10px; font-size:16px; letter-spacing:-.01em}
+    .muted{color:var(--muted); font-size:13px}
+
+    .formGrid{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px}
+    @media (max-width: 980px){.formGrid{grid-template-columns:1fr 1fr}}
+    @media (max-width: 560px){.formGrid{grid-template-columns:1fr}}
+
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:7px}
+    input,select{width:100%;padding:12px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background: rgba(255,255,255,.06);color: var(--text);outline:none;font-size:14px}
+    select option{color:#111}
+    input::placeholder{color: rgba(255,255,255,.45)}
+    input:focus,select:focus{border-color: rgba(6,182,212,.55); box-shadow: 0 0 0 4px rgba(6,182,212,.14)}
+
+    .actions{display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:12px}
+    .btn{display:inline-flex; align-items:center; justify-content:center; gap:10px;border-radius: 999px;padding:10px 14px;border:1px solid rgba(255,255,255,.14);background: rgba(255,255,255,.06);color: var(--text);cursor:pointer;user-select:none;text-decoration:none;font-size:13px}
+    .btnPrimary{border-color: transparent;background: linear-gradient(90deg, rgba(124,58,237,1), rgba(6,182,212,1));box-shadow: 0 18px 50px rgba(6,182,212,.14)}
+    .btnGhost{background: rgba(255,255,255,.04)}
+
+    .summaryCard{display:grid; gap:10px}
+    .kpi{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width: 560px){.kpi{grid-template-columns:1fr}}
+
+    .tile{border:1px solid var(--line);border-radius: 16px;background: rgba(255,255,255,.05);padding:12px}
+    .tile .t{font-size:12px;color:var(--muted)}
+    .tile .v{margin-top:6px;font-weight:750;letter-spacing:-.02em}
+
+    .badges{display:flex; flex-wrap:wrap; gap:6px}
+    .badge{font-size:12px;padding:6px 10px;border-radius:999px;background: rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color: rgba(255,255,255,.88)}
+
+    .sectionTitle{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+    .search{max-width:320px; width:100%}
+
+    .list{display:grid; gap:10px; margin-top:10px}
+    .cardItem{border: 1px solid rgba(255,255,255,.12);border-radius: 18px;background: rgba(255,255,255,.06);padding: 14px;display:grid;grid-template-columns: 1fr auto;gap:12px}
+    @media(max-width:820px){.cardItem{grid-template-columns:1fr}}
+
+    .cardItem .name{font-weight:850; letter-spacing:-.02em}
+    .metaLine{margin-top:6px; color:var(--muted); font-size:13px; line-height:1.55}
+
+    .pills{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px}
+    .pill{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background: rgba(0,0,0,.10);color: rgba(255,255,255,.82)}
+    .pillOk{border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.12)}
+    .pillMaybe{border-color: rgba(245,158,11,.5); background: rgba(245,158,11,.12)}
+    .pillNo{border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12)}
+
+    .cardActions{display:flex; gap:10px; align-items:start; flex-wrap:wrap; justify-content:flex-end}
+
+    details{margin-top:10px}
+    summary{cursor:pointer; color: rgba(255,255,255,.78)}
+
+    .foot{margin-top:18px; color:var(--muted); font-size:12px; line-height:1.6}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <h1>경기도 정책 추천</h1>
+          <div class="sub">구글 시트 실시간 연동. 범위는 <b>경기도 중심</b>으로 추천하고, 전국 정책은 ‘참고’로 함께 보여줄 수 있어요.</div>
+        </div>
+      </div>
+      <div class="topRight">
+        <span class="chip">프로토타입 <b>v2</b></span>
+        <span class="chip">데이터 <b id="dataCount">로딩 중</b></span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="heroInner">
+        <div class="grid">
+          <section class="panel">
+            <h2>내 정보 입력</h2>
+            <div class="formGrid">
+              <div>
+                <label>나이</label>
+                <input id="age" type="number" min="0" placeholder="예: 28" />
+              </div>
+              <div>
+                <label>거주 시군구(경기도)</label>
+                <select id="gyeonggiCity"></select>
+              </div>
+              <div>
+                <label>혼인 상태</label>
+                <select id="marriage">
+                  <option value="single">미혼</option>
+                  <option value="married">기혼</option>
+                  <option value="newly">신혼부부</option>
+                  <option value="engaged">예비부부</option>
+                  <option value="single_parent">한부모</option>
+                </select>
+              </div>
+              <div>
+                <label>자녀가 있나요?</label>
+                <select id="children">
+                  <option value="none">없음</option>
+                  <option value="has">있음</option>
+                  <option value="infant">영유아 자녀</option>
+                </select>
+              </div>
+              <div>
+                <label>현재 상태(고용)</label>
+                <select id="employment">
+                  <option value="jobseeker">구직 중</option>
+                  <option value="unemployed">미취업(구직 아님)</option>
+                  <option value="employed">직장 다님</option>
+                  <option value="self">자영업</option>
+                  <option value="freelance">프리랜서</option>
+                  <option value="startup">창업 준비</option>
+                </select>
+              </div>
+              <div>
+                <label>재학/학력</label>
+                <select id="education">
+                  <option value="any">해당 없음/무관</option>
+                  <option value="hs_student">고등학생(재학)</option>
+                  <option value="hs_expected">고졸 예정</option>
+                  <option value="uni_student">대학생(재학)</option>
+                  <option value="uni_grad">대학 졸업</option>
+                  <option value="grad_school">대학원(석·박사)</option>
+                </select>
+              </div>
+              <div>
+                <label>주거 형태</label>
+                <select id="housing">
+                  <option value="with_parents">부모님과 같이 살아요</option>
+                  <option value="independent">혼자 살아요(전월세/자가 등)</option>
+                  <option value="dorm">기숙사</option>
+                  <option value="unstable">고시원/비주택 등(주거불안)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btnPrimary" id="run">추천 보기</button>
+                <button class="btn btnGhost" id="toggleDebug" title="분류코드 표시/숨김">분류코드 숨김</button>
+              </div>
+              <label class="muted" style="display:flex; gap:10px; align-items:center;">
+                <input id="includeNationwide" type="checkbox" checked style="width:auto;" />
+                전국 정책도 함께 보기
+              </label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>내 정보 요약</h2>
+            <div class="summaryCard">
+              <div class="tile">
+                <div class="t">요약</div>
+                <div class="v" id="userSummary">아직 입력 전이에요.</div>
+              </div>
+
+              <div class="kpi">
+                <div class="tile">
+                  <div class="t">추천(해당 가능)</div>
+                  <div class="v" id="kpiOk">-</div>
+                </div>
+                <div class="tile">
+                  <div class="t">추가 확인</div>
+                  <div class="v" id="kpiMaybe">-</div>
+                </div>
+              </div>
+
+              <div class="tile">
+                <div class="t">분류코드(내부)</div>
+                <div class="badges" id="profileBadges" style="margin-top:10px; display:none;"></div>
+                <div class="muted" id="profileExplain" style="margin-top:8px; display:none;"></div>
+                <div class="muted" id="profileHiddenHint" style="margin-top:10px;">(숨김 상태)</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top:14px" class="panel">
+      <div class="sectionTitle">
+        <h2 style="margin:0">추천 결과</h2>
+        <input id="q" class="search" placeholder="정책명/키워드 검색" />
+      </div>
+
+      <div style="margin-top:12px" class="grid">
+        <div>
+          <div class="muted" style="margin-bottom:8px">지금 신청 추천</div>
+          <div class="list" id="listOk"></div>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:8px">조건 확인 필요</div>
+          <div class="list" id="listMaybe"></div>
+        </div>
+      </div>
+
+<details style="margin-top:16px;">
+  <summary class="muted" style="cursor:pointer; padding:8px 0; font-weight:600;">
+    현재는 비해당 (클릭하여 보기)
+  </summary>
+  <div class="list" id="listNo" style="margin-top:8px;"></div>
+</details>
+
+      <div class="foot">
+        ※ 구글 시트 웹 게시 연동 모드로 동작 중입니다. 구글 시트를 수정하면 자동으로 웹에 반영됩니다.
+      </div>
+    </section>
+  </div>
+
+<script>
+  // 🔴 아래 큰따옴표 안의 URL을 1단계에서 복사한 '구글 시트 웹에 게시' CSV 링크로 바꾸세요!
+const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTyURSDa3oJY2UbLgnp6YTpXFECx9x1WvHYYr3XcvUp078qrFHjyOCHg5lX6T6wiTJLI3Cn8tqLIWh/pub?output=csv";
+  const GYEONGGI_CITIES = [
+    '오산시','수원시','성남시','용인시','화성시','부천시','안산시','안양시','평택시','시흥시',
+    '김포시','광명시','군포시','의왕시','과천시','이천시','안성시','광주시','하남시','의정부시',
+    '고양시','파주시','양주시','포천시','동두천시','남양주시','구리시','가평군','양평군','연천군'
+  ];
+
+  const $ = (id)=>document.getElementById(id);
+  let debugVisible = false;
+  let POLICIES = [];
+
+  function escapeHtml(s){
+    return String(s??'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#39;');
+  }
+
+  function parseCsv(text){
+    const rows=[];
+    let row=[]; let cur=''; let inQuotes=false;
+    for(let i=0;i<text.length;i++){
+      const ch=text[i]; const next=text[i+1];
+      if(ch==='"' && inQuotes && next==='"'){ cur+='"'; i++; }
+      else if(ch==='"'){ inQuotes=!inQuotes; }
+      else if(ch===',' && !inQuotes){ row.push(cur); cur=''; }
+      else if((ch==='\n' || ch==='\r') && !inQuotes){
+        if(ch==='\r' && next==='\n') i++;
+        row.push(cur);
+        if(row.some(c=>c.trim()!=='')) rows.push(row);
+        row=[]; cur='';
+      } else {
+        cur+=ch;
+      }
+    }
+    if(cur.length>0 || row.length){
+      row.push(cur);
+      if(row.some(c=>c.trim()!=='')) rows.push(row);
+    }
+    return rows;
+  }
+
+  function toNum(v){
+    const s = String(v??'').trim();
+    if(!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  async function loadPolicies(){
+    try {
+      const res = await fetch(GOOGLE_SHEET_CSV_URL);
+      if(!res.ok) throw new Error(`로드 실패: ${res.status}`);
+      const text = await res.text();
+      const rows = parseCsv(text);
+      
+      if(!rows.length) return;
+      const header = rows[0].map(h=>h.trim());
+      const idx = (name) => header.indexOf(name);
+
+      POLICIES = rows.slice(1).filter(r => (r[idx('policyName')]||'').trim()!== '').map(r => ({
+        policyId: (r[idx('policyId')]||'').trim(),
+        policyName: (r[idx('policyName')]||'').trim(),
+        categoryMain: (r[idx('categoryMain')]||'').trim(),
+        categorySub: (r[idx('categorySub')]||'').trim(),
+        scopeSido: (r[idx('scopeSido')]||'').trim(),
+        scopeSigungu: (r[idx('scopeSigungu')]||'').trim(),
+        minAge: toNum(r[idx('minAge')]),
+        maxAge: toNum(r[idx('maxAge')]),
+        targetSummary: (r[idx('targetSummary')]||'').trim(),
+        benefitSummary: (r[idx('benefitSummary')]||'').trim(),
+        applyStart: (r[idx('applyStart')]||'').trim() || null,
+        applyEnd: (r[idx('applyEnd')]||'').trim() || null,
+        alwaysOpen: (r[idx('alwaysOpen')]||'').trim().toUpperCase()==='Y',
+        applyUrl: (r[idx('applyUrl')]||'').trim(),
+        sourceUrl: (r[idx('sourceUrl')]||'').trim(),
+        notes: (r[idx('notes')]||'').trim(),
+      }));
+
+      $('dataCount').textContent = `정책 ${POLICIES.length}개`;
+      run();
+    } catch(e) {
+      console.error(e);
+      $('dataCount').textContent = '구글 시트 연동 실패';
+    }
+  }
+
+  function buildProfile(u){
+    const tags=[]; const explain=[];
+    if(u.marriage==='single' && u.children==='none'){ tags.push('S'); explain.push('S=미혼·1인가구'); }
+    else { tags.push('F'); explain.push('F=가족가구/자녀'); }
+
+    if(u.employment==='unemployed' || u.employment==='jobseeker'){ tags.push('J'); explain.push('J=구직·준비'); }
+    else { tags.push('W'); explain.push('W=경제활동'); }
+
+    if(u.housing==='with_parents'){ tags.push('P'); explain.push('P=부모동거'); }
+    else if(u.housing==='independent' || u.housing==='unstable'){ tags.push('I'); explain.push('I=독립/주거불안'); }
+    else { tags.push('H'); explain.push('H=기타 주거'); }
+
+    tags.push('GG'); explain.push('GG=경기도 기준');
+    tags.push(`CITY:${u.gyeonggiCity}`); explain.push(`CITY=${u.gyeonggiCity}`);
+
+    return {tags, explain};
+  }
+
+  function matchPolicy(u,p, includeNationwide){
+    const reasons=[];
+
+    if(p.scopeSido === '전국'){
+      if(!includeNationwide) return {status:'no', reasons:['전국 정책(숨김)']};
+      reasons.push('전국 정책');
+    } else if(p.scopeSido && p.scopeSido !== '경기'){
+      return {status:'no', reasons:['현재는 경기도/전국만 표시']};
+    } else {
+      reasons.push('경기도 정책');
+    }
+
+    if(p.scopeSido !== '전국'){
+      const s = p.scopeSigungu || '전체';
+      if(s !== '전체' && s !== u.gyeonggiCity){
+        return {status:'no', reasons:[`거주지 조건: ${s}`]};
+      }
+    }
+
+    if(!Number.isFinite(u.age)) return {status:'maybe', reasons:['나이를 입력하면 더 정확해요']};
+    if(p.minAge!=null && u.age<p.minAge) return {status:'no', reasons:[`연령 조건: ${p.minAge}세 이상`]};
+    if(p.maxAge!=null && u.age>p.maxAge) return {status:'no', reasons:[`연령 조건: ${p.maxAge}세 이하`]};
+    reasons.push('연령 조건 충족');
+
+    return {status:'ok', reasons};
+  }
+
+  function pill(status){
+    if(status==='ok') return `<span class="pill pillOk">해당 가능</span>`;
+    if(status==='maybe') return `<span class="pill pillMaybe">추가 확인</span>`;
+    return `<span class="pill pillNo">비해당</span>`;
+  }
+
+  function itemCard(p,v){
+    const why = (v.reasons||[]).map(r=>`<div class="metaLine">- ${escapeHtml(r)}</div>`).join('');
+    const period = p.alwaysOpen ? '상시' : (p.applyStart||p.applyEnd ? `${p.applyStart||'미기재'} ~ ${p.applyEnd||'미기재'}` : '미기재');
+
+    const area = (p.scopeSido==='전국')
+      ? '전국'
+      : ((p.scopeSigungu && p.scopeSigungu !== '전체') ? `경기 · ${p.scopeSigungu}` : '경기 · 전체');
+
+    const link = p.applyUrl ? `<a class="btn btnPrimary" href="${p.applyUrl}" target="_blank" rel="noreferrer">신청 링크</a>` : '';
+
+    const sub = p.categorySub ? ` · ${p.categorySub}` : '';
+
+    return `
+      <div class="cardItem">
+        <div>
+          <div class="name">${escapeHtml(p.policyName)} <span style="margin-left:8px">${pill(v.status)}</span></div>
+          <div class="pills">
+            ${p.policyId?`<span class="pill">${escapeHtml(p.policyId)}</span>`:''}
+            <span class="pill">${escapeHtml(p.categoryMain||'')}${escapeHtml(sub)}</span>
+            <span class="pill">${escapeHtml(area)}</span>
+            <span class="pill">기간: ${escapeHtml(period)}</span>
+          </div>
+          <div class="metaLine">${escapeHtml(p.benefitSummary || '')}</div>
+          <div class="metaLine">대상: ${escapeHtml(p.targetSummary || '공고 확인')}</div>
+          ${p.notes?`<div class="metaLine">비고: ${escapeHtml(p.notes)}</div>`:''}
+          <details>
+            <summary>왜 추천됐나요?</summary>
+            ${why || '<div class="metaLine">- (v2 기준: 거주지/연령 중심)</div>'}
+          </details>
+        </div>
+        <div class="cardActions">${link}</div>
+      </div>
+    `;
+  }
+
+  function userSummaryText(u){
+    const parts=[];
+    if(Number.isFinite(u.age)) parts.push(`${u.age}세`);
+    parts.push(`경기도 ${u.gyeonggiCity} 거주`);
+
+    const marriageMap={single:'미혼',married:'기혼',newly:'신혼부부',engaged:'예비부부',single_parent:'한부모'};
+    parts.push(marriageMap[u.marriage]||'');
+
+    const childrenMap={none:'자녀 없음',has:'자녀 있음',infant:'영유아 자녀'};
+    parts.push(childrenMap[u.children]||'');
+
+    const empMap={jobseeker:'구직 중',unemployed:'미취업',employed:'직장 다님',self:'자영업',freelance:'프리랜서',startup:'창업 준비'};
+    parts.push(empMap[u.employment]||'');
+
+    const eduMap={any:'학력/재학 무관',hs_student:'고등학생(재학)',hs_expected:'고졸 예정',uni_student:'대학생(재학)',uni_grad:'대학 졸업',grad_school:'대학원'};
+    parts.push(eduMap[u.education]||'');
+
+    const houseMap={with_parents:'부모님과 동거',independent:'혼자 거주(독립)',dorm:'기숙사',unstable:'주거불안'};
+    parts.push(houseMap[u.housing]||'');
+
+    return parts.filter(Boolean).join(' · ');
+  }
+
+  function run(){
+    const age = Number($('age').value);
+    const u={
+      age: Number.isFinite(age)?age:NaN,
+      gyeonggiCity: $('gyeonggiCity').value,
+      marriage: $('marriage').value,
+      children: $('children').value,
+      employment: $('employment').value,
+      education: $('education').value,
+      housing: $('housing').value,
+    };
+
+    $('userSummary').textContent = userSummaryText(u);
+
+    const prof = buildProfile(u);
+    if(debugVisible){
+      $('profileBadges').style.display='flex';
+      $('profileExplain').style.display='block';
+      $('profileHiddenHint').style.display='none';
+      $('profileBadges').innerHTML = prof.tags.map(t=>`<span class="badge">${escapeHtml(t)}</span>`).join('');
+      $('profileExplain').textContent = prof.explain.join(' / ');
+    }else{
+      $('profileBadges').style.display='none';
+      $('profileExplain').style.display='none';
+      $('profileHiddenHint').style.display='block';
+    }
+
+    const includeNationwide = $('includeNationwide').checked;
+
+    const q = $('q').value.trim();
+    const filtered = !q ? POLICIES : POLICIES.filter(p =>
+      (p.policyName||'').includes(q) || (p.benefitSummary||'').includes(q) || (p.categoryMain||'').includes(q) || (p.policyId||'').includes(q)
+    );
+
+    const ok=[]; const maybe=[]; const no=[];
+    for(const p of filtered){
+      const v = matchPolicy(u,p, includeNationwide);
+      const html = itemCard(p,v);
+      if(v.status==='ok') ok.push(html);
+      else if(v.status==='maybe') maybe.push(html);
+      else no.push(html);
+    }
+
+    $('listOk').innerHTML = ok.join('') || `<div class="muted">해당 없음</div>`;
+    $('listMaybe').innerHTML = maybe.join('') || `<div class="muted">해당 없음</div>`;
+    $('listNo').innerHTML = no.join('') || `<div class="muted">해당 없음</div>`;
+
+    $('kpiOk').textContent = String(ok.length);
+    $('kpiMaybe').textContent = String(maybe.length);
+  }
+
+  function init(){
+    const sel = $('gyeonggiCity');
+    sel.innerHTML = GYEONGGI_CITIES.map(c=>`<option value="${c}">${c}</option>`).join('');
+    sel.value = '오산시';
+
+    $('run').addEventListener('click', run);
+    $('q').addEventListener('input', run);
+    $('includeNationwide').addEventListener('change', run);
+    $('toggleDebug').addEventListener('click', ()=>{
+      debugVisible = !debugVisible;
+      $('toggleDebug').textContent = debugVisible ? '분류코드 표시' : '분류코드 숨김';
+      run();
+    });
+  }
+
+  init();
+  loadPolicies();
+</script>
+</body>
+</html>
